@@ -4,6 +4,8 @@
 
 Create a new conversation by POSTing an XMLHttpRequest as below
 
+    var interactionLocation;
+
     function onConversationCreated(xhr) {
 		interactionLocation = xhr.getResponseHeader("Location");
     }
