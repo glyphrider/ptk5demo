@@ -1,0 +1,65 @@
+<html>
+	<head>
+		<title>My Simple Callback</title>
+		<link rel="stylesheet" type="text/css" href="callback.css"></link>
+		<script language="javascript" src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
+	</head>
+	<body>
+		<div class="widget" id="cb_widget">
+			<button id="cb_button">Call me back now</button>
+		</div>
+		<script language="javascript">
+			var interactionLocation;
+			$(document).ready(function() {
+				createConversation("http://localhost:8000/conversations","PlatformToolKit",onConversationCreated);
+			});
+
+	
+			function onConversationCreated(xhr) {
+				interactionLocation = xhr.getResponseHeader("Location");
+				json = eval('(' + xhr.responseText + ')');
+				ewt = parseInt(json.originalWaitTime.split(':')[0]);
+				$('#cb_button').text("Call me back in less than "+(ewt+1)+" minute(s)");
+				$('#cb_widget').show();
+			}
+
+			function createConversation(url,segment,callback) {
+				xhr = new XMLHttpRequest();
+				xhr.open("POST", url, true);
+				xhr.setRequestHeader("Content-type","application/json");
+				xhr.setRequestHeader("Accept", "application/json");
+				xhr.onreadystatechange = function () {
+					// onreadystatechange event handler used to react to the web request
+					if ((xhr.readyState == 4)) {
+						callback(xhr);
+					}
+				};
+				xhr.send("{\"segment\":\""+segment+"\"}");
+			}
+			
+			function updateConversationToAsapCallback(phoneNumber) {
+				updateConversationToCallback("voice://" + phoneNumber);
+			}
+
+			function updateConversationToCallback(contactUri) {
+				xhr = new XMLHttpRequest();
+				xhr.open("PUT", interactionLocation, true);
+				xhr.setRequestHeader("Content-type", "application/json");
+				xhr.setRequestHeader("Accept", "application/json");
+				xhr.onreadystatechange = function () {
+					if (xhr.readyState == 4) {
+						jsonPUT = eval('(' + xhr.responseText + ')');
+						interactionStatus = jsonPUT.status;
+					}
+				};
+				xhr.send("{\"contactUri\":\""+contactUri+"\"}");
+			}
+
+			$('#cb_button').click(function() {
+				updateConversationToAsapCallback("7032250");
+				$('#cb_widget').hide();
+			});
+			
+		</script>
+	</body>
+</html>
