@@ -4,7 +4,11 @@
 
 Create a new conversation by POSTing an XMLHttpRequest as below
 
-	function createConversation(url,segment) {
+    function onConversationCreated(xhr) {
+		interactionLocation = xhr.getResponseHeader("Location");
+    }
+
+	function createConversation(url,segment,callback) {
 		xhr = new XMLHttpRequest();
 		xhr.open("POST", url, true);
 		xhr.setRequestHeader("Content-type","application/json");
@@ -12,16 +16,13 @@ Create a new conversation by POSTing an XMLHttpRequest as below
 		xhr.onreadystatechange = function () {
 			// onreadystatechange event handler used to react to the web request
 			if ((xhr.readyState == 4)) {
-				interactionLocation = xhr.getResponseHeader("Location");
-				json = eval('(' + xhr.responseText + ')');
-				originalWaitTime = json.originalWaitTime;
-				originalWaitTimeComponents = originalWaitTime.split(':');
-				ewtMinutes = parseInt(originalWaitTimeComponents[0]) + 1;
-				updateASAP(ewtMinutes);
+				callback(xhr);
 			}
 		};
 		xhr.send("{\"segment\":\""+segment+"\"}");
 	}
+
+    createConversation("http://localhost:8000/conversations","PlatformToolKit",onConversationCreated);
 
 The interactionLocation (global) holds the URL needed to interact with the conversation we just created. The mythical updateASAP() function represents a mechanism to express the EWT to the user.
 
@@ -35,13 +36,10 @@ To update the conversation, we again use an XMLHttpRequest. This time we will PU
 		xhr.onreadystatechange = function () {
 			if (xhr.readyState == 4) {
 				jsonPUT = eval('(' + xhr.responseText + ')');
-				interactionStatus = jsonPUT.status;
 			}
 		};
 		xhr.send("{\"context\":{\"user\":\"" + user + "\"}}");
 	}
-
-The interactionStatus is holding, not the status of the call to the PTK, but the actual status of the conversation.
 
 To create a callback, we need to PUT again. Instead of updating the context, we will update the contactUri. This attribute can contain both the callback number and an opitonal appointment time (for scheduled callbacks). Here is an example of the simpler ASAP callback. This assumes all data validation has occurred and that phoneNumber is a well formatted number.
 
@@ -53,7 +51,6 @@ To create a callback, we need to PUT again. Instead of updating the context, we 
 		xhr.onreadystatechange = function () {
 			if (xhr.readyState == 4) {
 				jsonPUT = eval('(' + xhr.responseText + ')');
-				interactionStatus = jsonPUT.status;
 			}
 		};
 		xhr.send("{\"contactUri\":\"voice://" + phoneNumber + "\"}");
