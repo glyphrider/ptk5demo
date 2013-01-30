@@ -4,7 +4,7 @@
 
 Create a new conversation by POSTing an XMLHttpRequest as below
 
-	function createConversation(segment) {
+	function createConversation(url,segment) {
 		xhr = new XMLHttpRequest();
 		xhr.open("POST", url, true);
 		xhr.setRequestHeader("Content-type","application/json");
