@@ -2,13 +2,13 @@
 
 ## Some Simple Interactions
 
-Create a new conversation by POSTing an XMLHttpRequest as below
+Create a new conversation by POSTing an XMLHttpRequest using Javascript like the code below. There are two Javascript functions: one that sends the request, and a second one that processes the result.
 
-    var interactionLocation;
+	var interactionLocation;
 
-    function onConversationCreated(xhr) {
+	function onConversationCreated(xhr) {
 		interactionLocation = xhr.getResponseHeader("Location");
-    }
+	}
 
 	function createConversation(url,segment,callback) {
 		xhr = new XMLHttpRequest();
@@ -24,9 +24,11 @@ Create a new conversation by POSTing an XMLHttpRequest as below
 		xhr.send(JSON.stringify({"segment":segment}));
 	}
 
-    createConversation("http://localhost:8000/conversations","PlatformToolKit",onConversationCreated);
+The following invocation would *kickoff* the process.
 
-The interactionLocation (global) holds the URL needed to interact with the conversation we just created. The mythical updateASAP() function represents a mechanism to express the EWT to the user.
+	createConversation("http://localhost:8000/conversations","PlatformToolKit",onConversationCreated);
+
+The interactionLocation (global) holds the URL needed to interact with the conversation we just created.
 
 To update the conversation, we again use an XMLHttpRequest. This time we will PUT the request, passing additional data to the conversation.
 
@@ -93,13 +95,13 @@ Now, we can just create another one-liner to handle scheduled callbacks
 
 ## Putting It All Together
 
-Lets create a `<div>` to house our callback widget. We'll class it as a widget, for styling, and get it an id for scripting.
+Lets create a `<div>` to house our callback widget. We'll class it as a widget, for styling, and give it an id for scripting.
 
 	<div class="widget" id="cb_widget">
 
 	</div>
 
-Initially, the wdiget should not be visible, since we haven't yet gotten in touch with Virtual Hold. So, our CSS will look like
+Initially, the widget should not be visible, since we haven't yet gotten in touch with Virtual Hold. So, our CSS will look like
 
 	div.widget {
 		display: none;
@@ -159,7 +161,7 @@ Now we can add a handler for the button click and see if we can get a callback. 
 		$('#cb_widget').hide();
 	});
 
-We can make use of the data returned by the PTK to make our UI more informative
+We can make use of the data returned by the PTK to make our UI more informative. We take the JSON response from the PTK, and move that into a local variable, using eval(). Then we access the originalWaitTime attribute of the conversation, use string functions to grab the minutes, convert that into an integer; finally we update the text of the callback button with a message that we will get a callback in *less than* the EWT plus one minute.
 
 	function onConversationCreated(xhr) {
 		interactionLocation = xhr.getResponseHeader("Location");
