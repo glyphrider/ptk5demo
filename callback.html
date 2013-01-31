@@ -34,30 +34,34 @@
 						callback(xhr);
 					}
 				};
-				xhr.send("{\"segment\":\""+segment+"\"}");
+				xhr.send(JSON.stringify({"segment":segment}));
 			}
 			
-			function updateConversationToAsapCallback(phoneNumber) {
-				updateConversationToCallback("voice://" + phoneNumber);
+			function updateConversationToAsapCallback(phoneNumber,callback) {
+				updateConversationToCallback("voice://" + phoneNumber,callback);
 			}
 
-			function updateConversationToCallback(contactUri) {
+			function updateConversationToCallback(contactUri,callback) {
 				xhr = new XMLHttpRequest();
 				xhr.open("PUT", interactionLocation, true);
 				xhr.setRequestHeader("Content-type", "application/json");
 				xhr.setRequestHeader("Accept", "application/json");
 				xhr.onreadystatechange = function () {
 					if (xhr.readyState == 4) {
-						jsonPUT = eval('(' + xhr.responseText + ')');
-						interactionStatus = jsonPUT.status;
+                        callback(xhr);
 					}
 				};
-				xhr.send("{\"contactUri\":\""+contactUri+"\"}");
+				xhr.send(JSON.stringify({"contactUri":contactUri}));
 			}
 
-			$('#cb_button').click(function() {
-				updateConversationToAsapCallback("7032250");
+            function onCallbackCreated(xhr) {
+			    jsonPUT = eval('(' + xhr.responseText + ')');
+			    interactionStatus = jsonPUT.status;
 				$('#cb_widget').hide();
+            }
+
+			$('#cb_button').click(function() {
+				updateConversationToAsapCallback("7032250",onCallbackCreated);
 			});
 			
 		</script>
