@@ -21,7 +21,7 @@ Create a new conversation by POSTing an XMLHttpRequest as below
 				callback(xhr);
 			}
 		};
-		xhr.send("{\"segment\":\""+segment+"\"}");
+		xhr.send(JSON.stringify({"segment":segment}));
 	}
 
     createConversation("http://localhost:8000/conversations","PlatformToolKit",onConversationCreated);
@@ -30,58 +30,65 @@ The interactionLocation (global) holds the URL needed to interact with the conve
 
 To update the conversation, we again use an XMLHttpRequest. This time we will PUT the request, passing additional data to the conversation.
 
-	function updateConversationWithUser(user) {
+	function onConversationUpdated(xhr) {
+		jsonPUT = eval('(' + xhr.responseText + ')');
+	}
+
+	function updateConversationWithUser(user,callback) {
 		xhr = new XMLHttpRequest();
 		xhr.open("PUT", interactionLocation, true);
 		xhr.setRequestHeader("Content-type", "application/json");
 		xhr.setRequestHeader("Accept", "application/json");
 		xhr.onreadystatechange = function () {
 			if (xhr.readyState == 4) {
-				jsonPUT = eval('(' + xhr.responseText + ')');
+				callback(xhr);
 			}
 		};
-		xhr.send("{\"context\":{\"user\":\"" + user + "\"}}");
+		xhr.send(JSON.stringify({"context":{"user":user}}));
 	}
 
 To create a callback, we need to PUT again. Instead of updating the context, we will update the contactUri. This attribute can contain both the callback number and an opitonal appointment time (for scheduled callbacks). Here is an example of the simpler ASAP callback. This assumes all data validation has occurred and that phoneNumber is a well formatted number.
 
-	function updateConversationToAsapCallback(phoneNumber) {
+	function onCallbackCreated(xhr) {
+		jsonPUT = eval('(' + xhr.responseText + ')');
+	}
+
+	function updateConversationToAsapCallback(phoneNumber,callback) {
 		xhr = new XMLHttpRequest();
 		xhr.open("PUT", interactionLocation, true);
 		xhr.setRequestHeader("Content-type", "application/json");
 		xhr.setRequestHeader("Accept", "application/json");
 		xhr.onreadystatechange = function () {
 			if (xhr.readyState == 4) {
-				jsonPUT = eval('(' + xhr.responseText + ')');
+				callback(xhr);
 			}
 		};
-		xhr.send("{\"contactUri\":\"voice://" + phoneNumber + "\"}");
+		xhr.send(JSON.stringify({"contactUri":"voice://" + phoneNumber}));
 	}
 
 To better support appointments, we should refactor the code
 
-	function updateConversationToAsapCallback(phoneNumber) {
-		updateConversationToCallback("voice://" + phoneNumber);
+	function updateConversationToAsapCallback(phoneNumber,callback) {
+		updateConversationToCallback("voice://" + phoneNumber,callback);
 	}
 
-	function updateConversationToCallback(contactUri) {
+	function updateConversationToCallback(contactUri,callback) {
 		xhr = new XMLHttpRequest();
 		xhr.open("PUT", interactionLocation, true);
 		xhr.setRequestHeader("Content-type", "application/json");
 		xhr.setRequestHeader("Accept", "application/json");
 		xhr.onreadystatechange = function () {
 			if (xhr.readyState == 4) {
-				jsonPUT = eval('(' + xhr.responseText + ')');
-				interactionStatus = jsonPUT.status;
+				callback(xhr);
 			}
 		};
-		xhr.send("{\"contactUri\":\""+contactUri+"\"}");
+		xhr.send(JSON.stringify({"contactUri":contactUri}));
 	}
 
 Now, we can just create another one-liner to handle scheduled callbacks
 
-	function updateConversationToScheduledCallback(phoneNumber,appointmentTime) {
-		udpateConversationToCallback("voice://"+phoneNumber+"?appt="+appointmentTime);
+	function updateConversationToScheduledCallback(phoneNumber,appointmentTime,callback) {
+		udpateConversationToCallback("voice://"+phoneNumber+"?appt="+appointmentTime,callback);
 	}
 
 ## Putting It All Together
@@ -138,17 +145,17 @@ Now we can add our createConversation function from above. But, we'll include a 
 				callback(xhr);
 			}
 		};
-		xhr.send("{\"segment\":\""+segment+"\"}");
+		xhr.send(JSON.stringify({"segment":segment}));
 	}
 
 	</script>
 	</body>
 	</html>
 
-Now we can add a handler for the button click and see if we can get a callback. We'll also make our widget disappear, since our conversation will only be good for this one callback.
+Now we can add a handler for the button click and see if we can get a callback. We'll also make our widget disappear, since our conversation will only be good for this one callback. Resonable implementations of updateConversationToAsapCallback and onCallbackCreated exist in the previous section.
 
 	$('#cb_button').click(function() {
-		updateConversationToAsapCallback("7032222");
+		updateConversationToAsapCallback("7032222",onCallbackCreated);
 		$('#cb_widget').hide();
 	});
 
