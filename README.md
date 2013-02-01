@@ -35,22 +35,22 @@ The interactionLocation (global) holds the URL needed to interact with the conve
 
 To update the conversation, we again use an XMLHttpRequest. This time we will PUT the request, passing additional *context* data to the conversation. Our callback function shows how to *access* the data returned from the PTK; later we will see an example of how to use this data.
 
-	function onConversationUpdated(xhr) {
-		jsonPUT = eval('(' + xhr.responseText + ')');
-	}
-
 	function updateConversationWithUser(user,callback) {
 		ajaxRestRequest(interactionLocation,"PUT",callback).send(JSON.stringify({"context":{"user":user}}));
 	}
 
-To create a callback, we need to PUT again. Instead of updating the context, we will update the contactUri. This attribute can contain both the callback number and an opitonal appointment time (for scheduled callbacks). Here is an example of the simpler ASAP callback. This assumes all data validation has occurred and that phoneNumber is a well formatted number.
-
-	function onCallbackCreated(xhr) {
-		jsonPUT = eval('(' + xhr.responseText + ')');
+	function onConversationUpdated(xhr) {
+		var json = eval('(' + xhr.responseText + ')');
 	}
+
+To create a callback, we need to PUT again. Instead of updating the context, we will update the contactUri. This attribute can contain both the callback number and an opitonal appointment time (for scheduled callbacks). Here is an example of the simpler ASAP callback. This assumes all data validation has occurred and that phoneNumber is a well formatted number.
 
 	function updateConversationToAsapCallback(phoneNumber,callback) {
 		ajaxRestRequest(interactionLocaiton,"PUT",onCallbackCreated).send(JSON.stringify({"contactUri":"voice://" + phoneNumber}));
+	}
+
+	function onCallbackCreated(xhr) {
+		var json = eval('(' + xhr.responseText + ')');
 	}
 
 To better support appointments, we should refactor the code
