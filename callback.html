@@ -10,6 +10,20 @@
 		</div>
 		<script language="javascript">
 			var interactionLocation;
+
+            function ajaxRestRequest(url,method,callback) {
+				var xhr = new XMLHttpRequest();
+				xhr.open(method, url, true);
+				xhr.setRequestHeader("Content-type","application/json");
+				xhr.setRequestHeader("Accept", "application/json");
+				xhr.onreadystatechange = function () {
+					if ((xhr.readyState == 4)) {
+						callback(xhr);
+					}
+                }
+                return xhr;
+            }
+
 			$(document).ready(function() {
 				createConversation("http://localhost:8000/conversations","PlatformToolKit",onConversationCreated);
 			});
@@ -24,17 +38,7 @@
 			}
 
 			function createConversation(url,segment,callback) {
-				xhr = new XMLHttpRequest();
-				xhr.open("POST", url, true);
-				xhr.setRequestHeader("Content-type","application/json");
-				xhr.setRequestHeader("Accept", "application/json");
-				xhr.onreadystatechange = function () {
-					// onreadystatechange event handler used to react to the web request
-					if ((xhr.readyState == 4)) {
-						callback(xhr);
-					}
-				};
-				xhr.send(JSON.stringify({"segment":segment}));
+                ajaxRestRequest(url,"POST",callback).send(JSON.stringify({"segment":segment}));
 			}
 			
 			function updateConversationToAsapCallback(phoneNumber,callback) {
@@ -42,16 +46,7 @@
 			}
 
 			function updateConversationToCallback(contactUri,callback) {
-				xhr = new XMLHttpRequest();
-				xhr.open("PUT", interactionLocation, true);
-				xhr.setRequestHeader("Content-type", "application/json");
-				xhr.setRequestHeader("Accept", "application/json");
-				xhr.onreadystatechange = function () {
-					if (xhr.readyState == 4) {
-                        callback(xhr);
-					}
-				};
-				xhr.send(JSON.stringify({"contactUri":contactUri}));
+                ajaxRestRequest(interactionLocation,"PUT",callback).send(JSON.stringify({"contactUri":contactUri}));
 			}
 
             function onCallbackCreated(xhr) {
@@ -61,7 +56,7 @@
             }
 
 			$('#cb_button').click(function() {
-				updateConversationToAsapCallback("7032250",onCallbackCreated);
+				updateConversationToAsapCallback("33011",onCallbackCreated);
 			});
 			
 		</script>

@@ -2,26 +2,29 @@
 
 ## Some Simple Interactions
 
-Create a new conversation by POSTing an XMLHttpRequest using Javascript like the code below. There are two Javascript functions: one that sends the request, and a second one that processes the result.
+Create a new conversation by POSTing an XMLHttpRequest using Javascript like the code below. First, we'll introduce a Javascript function to wrap the nuance of the XMLHttpRequest object; this will keep the code that deals with the mechanics of the request separate from the more interesting code that is the focus of our work. The remaining two Javascript functions send the request, and processes the result. Additionally, we'll declare a global scope `var interactionLocation` that will hold the resource URL of the created interaction.
 
 	var interactionLocation;
 
-	function onConversationCreated(xhr) {
-		interactionLocation = xhr.getResponseHeader("Location");
-	}
-
-	function createConversation(url,segment,callback) {
-		xhr = new XMLHttpRequest();
-		xhr.open("POST", url, true);
+	function ajaxRestRequest(url,method,callback) {
+		var xhr = new XMLHttpRequest();
+		xhr.open(method, url, true);
 		xhr.setRequestHeader("Content-type","application/json");
 		xhr.setRequestHeader("Accept", "application/json");
 		xhr.onreadystatechange = function () {
-			// onreadystatechange event handler used to react to the web request
 			if ((xhr.readyState == 4)) {
 				callback(xhr);
 			}
-		};
-		xhr.send(JSON.stringify({"segment":segment}));
+		}
+		return xhr;
+	}
+
+	function createConversation(url,segment,callback) {
+		ajaxRestRequest(url,"POST",callback).send(JSON.stringify({"segment":segment}));
+	}
+
+	function onConversationCreated(xhr) {
+		interactionLocation = xhr.getResponseHeader("Location");
 	}
 
 The following invocation would *kickoff* the process.
@@ -30,23 +33,14 @@ The following invocation would *kickoff* the process.
 
 The interactionLocation (global) holds the URL needed to interact with the conversation we just created.
 
-To update the conversation, we again use an XMLHttpRequest. This time we will PUT the request, passing additional data to the conversation.
+To update the conversation, we again use an XMLHttpRequest. This time we will PUT the request, passing additional *context* data to the conversation. Our callback function shows how to *access* the data returned from the PTK; later we will see an example of how to use this data.
 
 	function onConversationUpdated(xhr) {
 		jsonPUT = eval('(' + xhr.responseText + ')');
 	}
 
 	function updateConversationWithUser(user,callback) {
-		xhr = new XMLHttpRequest();
-		xhr.open("PUT", interactionLocation, true);
-		xhr.setRequestHeader("Content-type", "application/json");
-		xhr.setRequestHeader("Accept", "application/json");
-		xhr.onreadystatechange = function () {
-			if (xhr.readyState == 4) {
-				callback(xhr);
-			}
-		};
-		xhr.send(JSON.stringify({"context":{"user":user}}));
+		ajaxRestRequest(interactionLocation,"PUT",callback).send(JSON.stringify({"context":{"user":user}}));
 	}
 
 To create a callback, we need to PUT again. Instead of updating the context, we will update the contactUri. This attribute can contain both the callback number and an opitonal appointment time (for scheduled callbacks). Here is an example of the simpler ASAP callback. This assumes all data validation has occurred and that phoneNumber is a well formatted number.
@@ -56,16 +50,7 @@ To create a callback, we need to PUT again. Instead of updating the context, we 
 	}
 
 	function updateConversationToAsapCallback(phoneNumber,callback) {
-		xhr = new XMLHttpRequest();
-		xhr.open("PUT", interactionLocation, true);
-		xhr.setRequestHeader("Content-type", "application/json");
-		xhr.setRequestHeader("Accept", "application/json");
-		xhr.onreadystatechange = function () {
-			if (xhr.readyState == 4) {
-				callback(xhr);
-			}
-		};
-		xhr.send(JSON.stringify({"contactUri":"voice://" + phoneNumber}));
+		ajaxRestRequest(interactionLocaiton,"PUT",onCallbackCreated).send(JSON.stringify({"contactUri":"voice://" + phoneNumber}));
 	}
 
 To better support appointments, we should refactor the code
@@ -75,16 +60,7 @@ To better support appointments, we should refactor the code
 	}
 
 	function updateConversationToCallback(contactUri,callback) {
-		xhr = new XMLHttpRequest();
-		xhr.open("PUT", interactionLocation, true);
-		xhr.setRequestHeader("Content-type", "application/json");
-		xhr.setRequestHeader("Accept", "application/json");
-		xhr.onreadystatechange = function () {
-			if (xhr.readyState == 4) {
-				callback(xhr);
-			}
-		};
-		xhr.send(JSON.stringify({"contactUri":contactUri}));
+		ajaxRestRequest(interactionLocation,"PUT",onCallbackCreated).send(JSON.stringify({"contactUri":contactUri}));
 	}
 
 Now, we can just create another one-liner to handle scheduled callbacks
@@ -127,27 +103,31 @@ Now we can add our createConversation function from above. But, we'll include a 
 	</div>
 	<script language="javascript">
 	var interactionLocation;
+
+	function ajaxRestRequest(url,method,callback) {
+		var xhr = new XMLHttpRequest();
+		xhr.open(method, url, true);
+		xhr.setRequestHeader("Content-type","application/json");
+		xhr.setRequestHeader("Accept", "application/json");
+		xhr.onreadystatechange = function () {
+			if ((xhr.readyState == 4)) {
+				callback(xhr);
+			}
+		}
+		return xhr;
+	}
+
 	$(document).ready(function() {
 		createConversation("http://localhost:8000/conversations","PlatformToolKit",onConversationCreated);
 	});
 
+	function createConversation(url,segment,callback) {
+		ajaxRestRequest(url,"POST",callback).send(JSON.stringify({"segment":segment}));
+	}
+
 	function onConversationCreated(xhr) {
 		interactionLocation = xhr.getResponseHeader("Location");
 		$('#cb_widget').show();
-	}
-
-	function createConversation(url,segment,callback) {
-		xhr = new XMLHttpRequest();
-		xhr.open("POST", url, true);
-		xhr.setRequestHeader("Content-type","application/json");
-		xhr.setRequestHeader("Accept", "application/json");
-		xhr.onreadystatechange = function () {
-			// onreadystatechange event handler used to react to the web request
-			if ((xhr.readyState == 4)) {
-				callback(xhr);
-			}
-		};
-		xhr.send(JSON.stringify({"segment":segment}));
 	}
 
 	</script>
@@ -157,11 +137,11 @@ Now we can add our createConversation function from above. But, we'll include a 
 Now we can add a handler for the button click and see if we can get a callback. We'll also make our widget disappear, since our conversation will only be good for this one callback. Resonable implementations of updateConversationToAsapCallback and onCallbackCreated exist in the previous section.
 
 	$('#cb_button').click(function() {
-		updateConversationToAsapCallback("7032222",onCallbackCreated);
+		updateConversationToAsapCallback("5551212",onCallbackCreated);
 		$('#cb_widget').hide();
 	});
 
-We can make use of the data returned by the PTK to make our UI more informative. We take the JSON response from the PTK, and move that into a local variable, using eval(). Then we access the originalWaitTime attribute of the conversation, use string functions to grab the minutes, convert that into an integer; finally we update the text of the callback button with a message that we will get a callback in *less than* the EWT plus one minute.
+Finally, here's our example of how to make use of the conversation state returned by the PTK methods. We can make our UI more informative by leveraging this information. We take the JSON response from the PTK, and move that into a local variable, using eval(). Then we access the originalWaitTime attribute of the conversation, use string functions to grab the minutes, convert that into an integer; finally we update the text of the callback button with a message that we will get a callback in *less than* the EWT plus one minute.
 
 	function onConversationCreated(xhr) {
 		interactionLocation = xhr.getResponseHeader("Location");
